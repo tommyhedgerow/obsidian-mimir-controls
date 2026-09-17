@@ -7,10 +7,15 @@
  * language. That layout is for a plugin with a book of strings, where loading the wrong
  * two is waste. This plugin has nine, and the thing that keeps two languages in step is
  * reading them side by side on one screen; two files drift apart, and a drifted
- * translation is worse than none. The eslint config points the rule that checks English
- * locale modules — `obsidianmd/ui/sentence-case-locale-module` — at this file by name,
- * because otherwise the English half would be the one piece of user-facing text in the
- * repository that nothing checks.
+ * translation is worse than none.
+ *
+ * WHAT THE LOCALE RULES CAN AND CANNOT SEE. `obsidianmd/ui/sentence-case-locale-module`
+ * reads a table only when the file is named `en*` AND the table is exported —
+ * `export default { … }` or `export const en = { … }`. This plugin is CommonJS on
+ * purpose, with no bundler and no build step that could change that, so the rule has
+ * nothing to read here whatever this file were called. The English below is therefore
+ * written to that rule's standard by hand, and the test harness holds the two tables
+ * against each other so that neither can lose a key quietly.
  *
  * WHY PLACEHOLDERS AND NOT FUNCTIONS. Every word a user reads should be a string in one
  * of the two lists below, so that the two can be read against each other and a missing
