@@ -6,10 +6,11 @@
  *   npm run lint
  *   npm run lint -- --fix
  *
- * Three departures from the stock config, all explained where they are set:
+ * Four departures from the stock config, all explained where they are set:
  * the plugin is authored as CommonJS on purpose, `build.mjs` is a build script
- * rather than code that ships to a vault, and sentence case has to be told
- * which words are proper nouns.
+ * rather than code that ships to a vault, sentence case has to be told which
+ * words are proper nouns, and the two languages live in one module rather than
+ * in the `en`/`zh` pair the locale conventions describe.
  */
 
 import { defineConfig } from 'eslint/config'
@@ -28,7 +29,7 @@ export default defineConfig([
         // file falls to the default project. Without this the type-aware parser
         // refuses to parse `src/main.js` at all, and the whole point of running
         // the linter is to check that file.
-        projectService: { allowDefaultProject: ['eslint.config.*', 'build.mjs', 'src/main.js'] },
+        projectService: { allowDefaultProject: ['eslint.config.*', 'build.mjs', 'src/main.js', 'src/strings.js'] },
         // CommonJS wraps a module's top-level code in a function, and the
         // TypeScript parser does not infer that from `sourceType` on its own.
         // Without it `no-implicit-globals` reads every top-level helper in
@@ -55,6 +56,25 @@ export default defineConfig([
         // `brands` REPLACES the rule's default list, so the platform names this
         // plugin's settings could plausibly use are repeated here rather than
         // left to be lowercased by `--fix`.
+        brands: ['Mimir Controls', 'Obsidian', 'Markdown'],
+      }],
+    },
+  },
+
+  {
+    // The locale convention the plugin's own rules describe is one file per
+    // language, named `en.js`, `en.json`, `en/**`. This plugin keeps both
+    // languages in one module instead — see the header of `src/strings.js` for
+    // why — so the rule that checks an English locale module is pointed at that
+    // file by name. Without it the English strings would be the one piece of
+    // user-facing text here that nothing reads.
+    files: ['src/strings.js'],
+    rules: {
+      'obsidianmd/ui/sentence-case-locale-module': ['warn', {
+        enforceCamelCaseLower: true,
+        // Passing `brands` REPLACES the rule's default list, so the names a
+        // string here could plausibly contain are repeated rather than left to
+        // be lowercased by `--fix`.
         brands: ['Mimir Controls', 'Obsidian', 'Markdown'],
       }],
     },

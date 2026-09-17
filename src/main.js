@@ -27,7 +27,13 @@
  */
 
 const obsidian = require('obsidian')
-const { Plugin } = obsidian
+const { Plugin, getLanguage } = obsidian
+
+/* The words, in a module of their own so that both languages sit in one place. The
+ * require is written on one line and in one shape because `build.mjs` looks for exactly
+ * this line and inlines the module in its place — the release ships a single file, so
+ * there is nowhere beside `main.js` for a sibling module to live. */
+const { fill, tableFor } = require('./strings')
 
 /* The reading sizes, keyed to the pane's own three steps. Kept in step with
  * Tools/mimir-tokens.json by Tools/check-tokens.mjs — see that file's header. */
@@ -51,6 +57,16 @@ function nearestSize (app) {
 
 class MimirControls extends Plugin {
   async onload () {
+    /* Which table this load speaks, chosen once and kept for every mark the plugin draws
+     * below. The interface language cannot change while the app is running, so there is
+     * nothing later to re-read.
+     *
+     * `getLanguage()` arrived in Obsidian 1.8.7 and this plugin's declared floor is
+     * lower, so an app without it is read rather than called: a missing function is not a
+     * language, and the table that comes back for `undefined` is English — which is what
+     * this plugin said before it said anything in Chinese. */
+    this.strings = tableFor(typeof getLanguage === 'function' ? getLanguage() : undefined)
+
     // Every pane that is showing controls, so a repaint reaches all of them.
     this.sizeButtons = []
     this.frameButtons = []
@@ -59,17 +75,17 @@ class MimirControls extends Plugin {
     // not a note is open for the buttons to attach to.
     this.addCommand({
       id: 'toggle-light-dark',
-      name: 'Toggle light and dark',
+      name: this.strings.commandToggleFrame,
       callback: () => { this.toggleFrame() }
     })
     this.addCommand({
       id: 'reading-size-next',
-      name: 'Reading size: next step',
+      name: this.strings.commandSizeNext,
       callback: () => { this.stepSize(1) }
     })
     this.addCommand({
       id: 'reading-size-previous',
-      name: 'Reading size: previous step',
+      name: this.strings.commandSizePrevious,
       callback: () => { this.stepSize(-1) }
     })
 
@@ -185,6 +201,9 @@ class MimirControls extends Plugin {
   paint () {
     const frame = currentFrame(this.app)
     const size = nearestSize(this.app)
+    // The numbers that go into the two size strings, gathered so that the strings
+    // themselves stay whole sentences in `strings.js`.
+    const numbers = { px: SIZES[size], step: size + 1, total: SIZES.length }
 
     // Drawings in Learn/Viz are inked twice, and the second palette is chosen by this
     // class rather than by `prefers-color-scheme`: the app can be dark while the machine
@@ -204,12 +223,8 @@ class MimirControls extends Plugin {
         else dot.removeAttribute('data-on')
       })
       button.setAttribute('data-size', SIZES[size] + 'px')
-      button.setAttribute('aria-label',
-        'Reading size ' + SIZES[size] + ' px (' + (size + 1) + ' of ' + SIZES.length
-        + ') — press for the next, right-click for the previous')
-      button.setAttribute('title',
-        'Reading size: ' + SIZES[size] + 'px — ' + (size + 1) + ' of ' + SIZES.length
-        + '. Everything read moves together. Right-click steps back.')
+      button.setAttribute('aria-label', fill(this.strings.sizeLabel, numbers))
+      button.setAttribute('title', fill(this.strings.sizeTooltip, numbers))
     }
 
     this.frameButtons = this.frameButtons.filter(button => button.isConnected)
@@ -220,9 +235,11 @@ class MimirControls extends Plugin {
       }
       button.setAttribute('data-frame', frame)
       button.setAttribute('aria-label', frame === 'dark'
-        ? 'Reading in the dark — press for the light'
-        : 'Reading in the light — press for the dark')
-      button.setAttribute('title', frame === 'dark' ? 'Light' : 'Dark')
+        ? this.strings.frameLabelDark
+        : this.strings.frameLabelLight)
+      button.setAttribute('title', frame === 'dark'
+        ? this.strings.frameTitleDark
+        : this.strings.frameTitleLight)
     }
   }
 }
