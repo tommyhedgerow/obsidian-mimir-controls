@@ -1,0 +1,12 @@
+# The release artifact. Built by `npm run build`, attached to the GitHub
+# release, never committed — see build.mjs for why.
+#
+# The leading slash matters: a bare `main.js` would also match `src/main.js`,
+# and the source would silently never be committed. That is the one file the
+# community directory rebuilds from, so it is the one file that must be here.
+/main.js
+
+node_modules/
+data.json
+.DS_Store
+*.map

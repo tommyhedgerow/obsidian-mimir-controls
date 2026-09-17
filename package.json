@@ -1,0 +1,19 @@
+{
+  "name": "obsidian-mimir-controls",
+  "version": "1.0.0",
+  "description": "Reading size and light or dark, from the note header.",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check",
+    "lint": "eslint ."
+  },
+  "keywords": ["obsidian", "obsidian-plugin", "reading", "font-size", "dark-mode"],
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.4.2",
+    "globals": "^17.6.0"
+  }
+}

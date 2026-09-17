@@ -1,0 +1,66 @@
+# Release on a bare `x.y.z` tag.
+#
+# The tag must equal `version` in manifest.json — Obsidian downloads `main.js`,
+# `manifest.json` and (optionally) `styles.css` from the release whose tag
+# matches the manifest, so a mismatch ships a plugin nobody can install.
+#
+# `main.js` is deliberately NOT committed. It is built here and attached to the
+# release, which is what lets the community directory rebuild from source and
+# check that what users run is what the repository contains. The build is a
+# copy, so that check is exact.
+#
+# The attestation step records signed build provenance for the release assets.
+# It is optional, and it is the thing that lets a user verify that the `main.js`
+# they downloaded came from this repository and this commit.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Check that the tag matches manifest.json
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version="$(node -p "require('./manifest.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag '$tag' does not match manifest version '$version'"
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            ${{ hashFiles('styles.css') != '' && 'styles.css' || '' }}
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          files="main.js manifest.json"
+          [ -f styles.css ] && files="$files styles.css"
+          gh release create "$tag" --title="$tag" --generate-notes $files
